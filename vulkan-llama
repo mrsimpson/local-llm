@@ -1,0 +1,3 @@
+#!/bin/bash
+# Wrapper for llama-server with Vulkan backend
+exec "$(dirname "$0")/llama-server" vulkan "$@"

@@ -1,0 +1,98 @@
+#!/bin/bash
+# Universal llama.cpp server launcher for distrobox containers
+# Supports both ROCm and Vulkan backends
+# 
+# Usage: llama-server <backend> <model-config> [additional-args]
+# Example: llama-server rocm qwen3-coder-30b --port 8000
+#          llama-server vulkan devstral-small-24b --port 8080
+
+set -e
+
+# Backend configuration
+declare -A BACKENDS=(
+    [rocm]="llama-rocm-7.1.1|docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.1.1-rocwmma"
+    [vulkan]="vulkan-radv|docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv"
+)
+
+# Parse backend
+BACKEND="${1:-rocm}"
+if [[ ! ${BACKENDS[$BACKEND]+_} ]]; then
+    echo "Error: Unknown backend '$BACKEND'"
+    echo "Available backends: ${!BACKENDS[@]}"
+    exit 1
+fi
+
+# Extract config for the backend
+IFS='|' read -r CONTAINER_NAME IMAGE <<< "${BACKENDS[$BACKEND]}"
+WRAPPER_SCRIPT="llama-server-container"
+shift
+
+CONFIG_DIR="${XDG_CONFIG_HOME:=$HOME/.config}/llama-cpp"
+
+# Parse model config
+MODEL_CONFIG="${1:-}"
+
+# If no model config provided, show available configs
+if [[ -z "$MODEL_CONFIG" ]]; then
+    echo "Usage: llama-server <backend> <model-config> [additional-args]"
+    echo ""
+    echo "Available backends: rocm, vulkan"
+    echo ""
+    echo "Available model configs in $CONFIG_DIR:"
+    if [[ -d "$CONFIG_DIR" ]]; then
+        ls -1 "$CONFIG_DIR"/*.conf 2>/dev/null | while read -r conf; do
+            basename=$(basename "$conf" .conf)
+            size=$(du -h "$conf" | cut -f1)
+            echo "  - $basename"
+        done
+    else
+        echo "  (config directory does not exist)"
+    fi
+    exit 0
+fi
+
+shift
+
+CONFIG_FILE="$CONFIG_DIR/${MODEL_CONFIG}.conf"
+
+# Check if config file exists
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Config file not found: $CONFIG_FILE"
+    echo ""
+    echo "Available model configs in $CONFIG_DIR:"
+    if [[ -d "$CONFIG_DIR" ]]; then
+        ls -1 "$CONFIG_DIR"/*.conf 2>/dev/null | while read -r conf; do
+            basename=$(basename "$conf" .conf)
+            echo "  - $basename"
+        done
+    else
+        echo "  (config directory does not exist)"
+    fi
+    exit 1
+fi
+
+# Check if container exists, if not create it
+if ! distrobox list | grep -q "^.*| $CONTAINER_NAME |"; then
+    echo "Container $CONTAINER_NAME not found. Creating with $IMAGE..."
+    distrobox create -n "$CONTAINER_NAME" \
+        --image "$IMAGE" \
+        --additional-flags "--device /dev/kfd --device /dev/dri --group-add video --group-add render --security-opt seccomp=unconfined"
+    
+    # Setup wrapper script and configs
+    distrobox enter "$CONTAINER_NAME" -- bash -c 'mkdir -p ~/.local/bin ~/.config/llama-cpp'
+    cat "$(dirname "$0")/llama-server-container" | distrobox enter "$CONTAINER_NAME" -- bash -c "cat > ~/.local/bin/$WRAPPER_SCRIPT && chmod +x ~/.local/bin/$WRAPPER_SCRIPT"
+    
+    for conf in "$CONFIG_DIR"/*.conf; do
+        cat "$conf" | distrobox enter "$CONTAINER_NAME" -- bash -c "cat > ~/.config/llama-cpp/$(basename "$conf")"
+    done
+    
+    echo "Container setup complete!"
+fi
+
+# Add default --host if not specified
+if [[ ! " $@ " =~ " --host " ]]; then
+    set -- "$@" "--host" "0.0.0.0"
+fi
+
+# Launch server
+distrobox enter "$CONTAINER_NAME" -- "$WRAPPER_SCRIPT" "$MODEL_CONFIG" "$@"
