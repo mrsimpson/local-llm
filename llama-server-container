@@ -4,7 +4,10 @@
 
 set -e
 
-CONFIG_DIR="${XDG_CONFIG_HOME:=$HOME/.config}/llama-cpp"
+# Config directory - support environment variable override
+# Default: ~/.config/llama-cpp
+# Override with: LLAMA_CONFIG_DIR environment variable
+CONFIG_DIR="${LLAMA_CONFIG_DIR:=${XDG_CONFIG_HOME:=$HOME/.config}/llama-cpp}"
 MODEL_CONFIG="${1:-default}"
 CONFIG_FILE="$CONFIG_DIR/${MODEL_CONFIG}.conf"
 
@@ -44,9 +47,16 @@ if [[ "$FLASH_ATTN" == "1" ]]; then
     LLAMA_CMD+=("--flash-attn" "on")
 fi
 
-# Add jinja support if enabled
-if [[ "$JINJA" == "1" ]]; then
+# Add jinja support
+if [[ "$JINJA" == "0" ]]; then
+    LLAMA_CMD+=("--no-jinja")
+elif [[ "$JINJA" == "1" ]]; then
     LLAMA_CMD+=("--jinja")
+fi
+
+# Add custom chat template if specified
+if [[ -n "$CHAT_TEMPLATE_FILE" && -f "$CHAT_TEMPLATE_FILE" ]]; then
+    LLAMA_CMD+=("--chat-template-file" "$CHAT_TEMPLATE_FILE")
 fi
 
 # Add any additional arguments passed to the script

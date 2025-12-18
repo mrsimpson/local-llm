@@ -27,7 +27,11 @@ IFS='|' read -r CONTAINER_NAME IMAGE <<< "${BACKENDS[$BACKEND]}"
 WRAPPER_SCRIPT="llama-server-container"
 shift
 
-CONFIG_DIR="${XDG_CONFIG_HOME:=$HOME/.config}/llama-cpp"
+# Config directory - support environment variable override
+# Default: ./configs (relative to this script)
+# Override with: LLAMA_CONFIG_DIR environment variable
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="${LLAMA_CONFIG_DIR:=$SCRIPT_DIR/configs}"
 
 # Parse model config
 MODEL_CONFIG="${1:-}"
