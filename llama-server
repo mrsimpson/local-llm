@@ -10,7 +10,7 @@ set -e
 
 # Backend configuration
 declare -A BACKENDS=(
-    [rocm]="llama-rocm-7.1.1|docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.1.1-rocwmma"
+    [rocm]="llama-rocm-7.2|docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.2"
     [vulkan]="vulkan-radv|docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv"
 )
 
