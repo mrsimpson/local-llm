@@ -25,7 +25,7 @@ curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo
 
 This project uses the amazing [kyuz0/amd-strix-halo-toolboxes](https://github.com/kyuz0/amd-strix-halo-toolboxes) which provides pre-built containerized environments for different GPU backends:
 
-- **ROCm 7.1.1**: `docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.1.1-rocwmma`
+- **ROCm 7.2**: `docker.io/kyuz0/amd-strix-halo-toolboxes:rocm-7.2`
 - **Vulkan RADV**: `docker.io/kyuz0/amd-strix-halo-toolboxes:vulkan-radv`
 
 These containers handle all GPU driver setup automatically.
@@ -127,6 +127,8 @@ rocm-llama my-model --port 8000
 
 Current models configured and tested:
 
+- **qwen3.6-35b-a3b** - Qwen3.6-35B-A3B (38.5GB, UD-Q8_K_XL, MoE 3B active, default)
+- **qwen3-coder-next** - Qwen3-Coder-Next (86GB, UD-Q8_K_XL, MoE 3B active)
 - **qwen3-coder-30b** - Qwen3-Coder-30B (34GB, Q8_K_XL, OpenCode-compatible)
 - **devstral-small-24b** - Devstral-Small-2-24B (28GB, Q8_K_XL)
 - **gpt-oss-120b** - GPT-OSS-120B (61GB, F16)
@@ -145,7 +147,37 @@ Current models configured and tested:
 | `GPU_LAYERS` | 999 | Layers to keep in VRAM (999 = all) |
 | `FLASH_ATTN` | 1 | Enable flash attention |
 | `JINJA` | 1 | Enable jinja template processing for tools |
+| `NO_MMAP` | 1 | Disable memory mapping (recommended for Strix Halo) |
+| `CACHE_TYPE_K` | q8_0 | KV cache key quantization type |
+| `CACHE_TYPE_V` | q8_0 | KV cache value quantization type |
+| `CACHE_REUSE` | 4096 | Prompt cache reuse size |
+| `KV_UNIFIED` | 1 | Unified KV cache (for unified memory systems) |
+| `SPEC_TYPE` | ngram-mod | Speculative decoding type |
+| `SPEC_NGRAM_SIZE_N` | 10 | N-gram size for speculative decoding |
+| `DRAFT_MIN` | 12 | Minimum draft tokens |
+| `DRAFT_MAX` | 24 | Maximum draft tokens |
 | `CHAT_TEMPLATE_FILE` | (optional) | Custom jinja template for tools |
+
+## Systemd Service
+
+A parameterized systemd user service is provided for auto-starting models on boot:
+
+```bash
+# Start a model
+systemctl --user start llama-server@qwen3.6-35b-a3b
+
+# Enable on boot
+systemctl --user enable llama-server@qwen3.6-35b-a3b
+
+# Switch default model
+systemctl --user disable llama-server@qwen3.6-35b-a3b
+systemctl --user enable llama-server@qwen3-coder-next
+
+# Check status
+systemctl --user status llama-server@qwen3.6-35b-a3b
+```
+
+The instance name after `@` matches the config filename (without `.conf`).
 
 ## Additional Arguments
 

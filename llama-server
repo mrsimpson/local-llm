@@ -98,5 +98,5 @@ if [[ ! " $@ " =~ " --host " ]]; then
     set -- "$@" "--host" "0.0.0.0"
 fi
 
-# Launch server
-distrobox enter "$CONTAINER_NAME" -- "$WRAPPER_SCRIPT" "$MODEL_CONFIG" "$@"
+# Launch server (use full path since non-login shells may not have ~/.local/bin in PATH)
+distrobox enter "$CONTAINER_NAME" -- "\$HOME/.local/bin/$WRAPPER_SCRIPT" "$MODEL_CONFIG" "$@"
