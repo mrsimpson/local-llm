@@ -132,7 +132,12 @@ Current models configured and tested:
 - **qwen3-coder-30b** - Qwen3-Coder-30B (34GB, Q8_K_XL, OpenCode-compatible)
 - **devstral-small-24b** - Devstral-Small-2-24B (28GB, Q8_K_XL)
 - **gpt-oss-120b** - GPT-OSS-120B (61GB, F16)
+- **nomic-embed-v1.5** - nomic-embed-text-v1.5 (140MB, Q8_0, 768-dim embeddings, port 8081)
 - **default** - Fallback configuration
+
+## Embedding Models
+
+Configs with `EMBEDDINGS=1` run llama-server in embedding-only mode (adds `--embeddings --pooling $POOLING --no-warmup`, skips jinja/KV-cache/speculative-decoding flags). Set `PORT` in the config to pick a port other than 8080 — useful for running an embedding server alongside the main chat server.
 
 ## Configuration Options
 
