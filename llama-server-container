@@ -60,62 +60,61 @@ if [[ "$NO_MMAP" == "1" ]]; then
     LLAMA_CMD+=("--no-mmap")
 fi
 
+# Enable /v1/embeddings endpoint alongside generation
 if [[ "$EMBEDDINGS" == "1" ]]; then
-    # Embedding-only mode: skip generation-specific flags (jinja, kv cache
-    # quantization, speculative decoding) — they don't apply and some error
-    # out when --embeddings is set.
-    LLAMA_CMD+=("--embeddings" "--pooling" "${POOLING:-mean}" "--no-warmup")
-else
-    # Generation mode flags
+    LLAMA_CMD+=("--embeddings")
+fi
+if [[ -n "$POOLING" ]]; then
+    LLAMA_CMD+=("--pooling" "$POOLING")
+fi
 
-    # Add flash attention if enabled
-    if [[ "$FLASH_ATTN" == "1" ]]; then
-        LLAMA_CMD+=("--flash-attn" "on")
-    fi
+# Add flash attention if enabled
+if [[ "$FLASH_ATTN" == "1" ]]; then
+    LLAMA_CMD+=("--flash-attn" "on")
+fi
 
-    # Add KV cache quantization if specified
-    if [[ -n "$CACHE_TYPE_K" ]]; then
-        LLAMA_CMD+=("--cache-type-k" "$CACHE_TYPE_K")
-    fi
-    if [[ -n "$CACHE_TYPE_V" ]]; then
-        LLAMA_CMD+=("--cache-type-v" "$CACHE_TYPE_V")
-    fi
+# Add KV cache quantization if specified
+if [[ -n "$CACHE_TYPE_K" ]]; then
+    LLAMA_CMD+=("--cache-type-k" "$CACHE_TYPE_K")
+fi
+if [[ -n "$CACHE_TYPE_V" ]]; then
+    LLAMA_CMD+=("--cache-type-v" "$CACHE_TYPE_V")
+fi
 
-    # Prompt cache reuse
-    if [[ -n "$CACHE_REUSE" ]]; then
-        LLAMA_CMD+=("--cache-reuse" "$CACHE_REUSE")
-    fi
+# Prompt cache reuse
+if [[ -n "$CACHE_REUSE" ]]; then
+    LLAMA_CMD+=("--cache-reuse" "$CACHE_REUSE")
+fi
 
-    # Unified KV cache (better for unified memory systems)
-    if [[ "$KV_UNIFIED" == "1" ]]; then
-        LLAMA_CMD+=("--kv-unified")
-    fi
+# Unified KV cache (better for unified memory systems)
+if [[ "$KV_UNIFIED" == "1" ]]; then
+    LLAMA_CMD+=("--kv-unified")
+fi
 
-    # Speculative decoding (ngram-based, no draft model needed)
-    if [[ -n "$SPEC_TYPE" ]]; then
-        LLAMA_CMD+=("--spec-type" "$SPEC_TYPE")
-    fi
-    if [[ -n "$SPEC_NGRAM_SIZE_N" ]]; then
-        LLAMA_CMD+=("--spec-ngram-size-n" "$SPEC_NGRAM_SIZE_N")
-    fi
-    if [[ -n "$DRAFT_MIN" ]]; then
-        LLAMA_CMD+=("--draft-min" "$DRAFT_MIN")
-    fi
-    if [[ -n "$DRAFT_MAX" ]]; then
-        LLAMA_CMD+=("--draft-max" "$DRAFT_MAX")
-    fi
+# Speculative decoding (ngram-based, no draft model needed)
+if [[ -n "$SPEC_TYPE" ]]; then
+    LLAMA_CMD+=("--spec-type" "$SPEC_TYPE")
+fi
+if [[ -n "$SPEC_NGRAM_SIZE_N" ]]; then
+    LLAMA_CMD+=("--spec-ngram-size-n" "$SPEC_NGRAM_SIZE_N")
+fi
+if [[ -n "$DRAFT_MIN" ]]; then
+    LLAMA_CMD+=("--draft-min" "$DRAFT_MIN")
+fi
+if [[ -n "$DRAFT_MAX" ]]; then
+    LLAMA_CMD+=("--draft-max" "$DRAFT_MAX")
+fi
 
-    # Add jinja support
-    if [[ "$JINJA" == "0" ]]; then
-        LLAMA_CMD+=("--no-jinja")
-    elif [[ "$JINJA" == "1" ]]; then
-        LLAMA_CMD+=("--jinja")
-    fi
+# Add jinja support
+if [[ "$JINJA" == "0" ]]; then
+    LLAMA_CMD+=("--no-jinja")
+elif [[ "$JINJA" == "1" ]]; then
+    LLAMA_CMD+=("--jinja")
+fi
 
-    # Add custom chat template if specified
-    if [[ -n "$CHAT_TEMPLATE_FILE" && -f "$CHAT_TEMPLATE_FILE" ]]; then
-        LLAMA_CMD+=("--chat-template-file" "$CHAT_TEMPLATE_FILE")
-    fi
+# Add custom chat template if specified
+if [[ -n "$CHAT_TEMPLATE_FILE" && -f "$CHAT_TEMPLATE_FILE" ]]; then
+    LLAMA_CMD+=("--chat-template-file" "$CHAT_TEMPLATE_FILE")
 fi
 
 # Add any additional arguments passed to the script
